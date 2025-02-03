@@ -1,0 +1,72 @@
+<style>
+ .line, .aui-table-list{
+    border-collapse: collapse;
+    border: 1px solid black; 
+  }
+  .right { 
+    text-align: center;
+    border-collapse: collapse; 
+    border: 1px solid black; 
+  } 
+
+  .aui-page-panel {
+   	height:800px; 
+  }
+  
+.pagination {
+   display: inline-block;
+}
+
+  .pagination a.active {
+    background-color: #4CAF50;
+    color: white;
+    border: 1px solid #4CAF50;
+}
+
+.pagination a:hover:not(.active) {background-color: #ddd;}
+  
+.pagination a {
+    color: black;
+    float: left;
+    padding: 8px 16px;
+    text-decoration: none;
+    transition: background-color .3s;
+    border: 1px solid #ddd;
+}
+
+  #pagination {
+    width:98%
+  }
+  
+#pageNum {
+	text-align:right;  
+  	font-size:24px;
+}
+  
+</style>
+<table class="aui-table-list" style="width:100%" id="header-fixed">
+  <thead id="tableHead">
+    <tr>
+      <th style="width:10px" id = "id" class = "line">Id</th>
+      <th style="width:350px" id = "logMessage" class = "line">Message</th>
+      <th style="width:50px" id = "date" class = "line">Date</th>
+      <th style="width:200px" id = "subsystemName" class = "line">Subsystem</th>
+      <th style="width:50px" id = "time" class = "line">Time</th>
+      <th style="width:50px" id = "state" class = "line">State</th>
+      <th style="width:30px" id = "status" class = "line">Status</th>
+      <th style="width:70px" id = "issueKey" class = "line">Issue key</th>
+    </tr>
+    <tr>
+    </tr>
+  </thead>
+  <tbody id="tableBody">
+  </tbody>
+</table>
+
+<br>
+
+<div id="pagination" class="pagination">
+  <a id="previous" href="#" onclick="goBack();">❮</a>
+  <a id="next" href="#" onclick="goNext();">❯</a>
+  <div id="pageNum">1</div>
+</div>
