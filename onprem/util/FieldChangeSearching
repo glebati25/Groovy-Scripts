@@ -1,0 +1,62 @@
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.jql.parser.JqlQueryParser
+import com.atlassian.jira.jql.query.IssueIdCollector
+import com.atlassian.jira.issue.search.SearchProvider
+import com.atlassian.jira.issue.search.SearchQuery
+import com.atlassian.jira.issue.MutableIssue
+
+def serviceUserKey = ""
+def getIssues = { IssueIdCollector collector ->
+    def issueManager = ComponentAccessor.issueManager
+    def issues = []
+      
+    for (id in collector.getIssueIds()) {
+        issues << issueManager.getIssueObject(id.toLong())
+    }
+    return issues as ArrayList<MutableIssue>
+}
+  
+def jqlQueryParser = ComponentAccessor.getComponent(JqlQueryParser)
+def query = jqlQueryParser.parseQuery("""project = Test""") //JQL
+ 
+def fieldName = "Priority"
+ 
+def change = false //if "true" - look for field changes in history, "false" - look for no field changes
+ 
+def userManager =  ComponentAccessor.userManager
+def user = userManager.getUserByKey(serviceUserKey)
+  
+def collector = new IssueIdCollector()
+  
+def searchProvider = ComponentAccessor.getComponent(SearchProvider)
+searchProvider.search(SearchQuery.create(query, user), collector)
+  
+def issues = getIssues(collector)
+ 
+def returnIssues = []
+ 
+for (issue in issues) {
+     
+    def issueManager = ComponentAccessor.issueManager
+  
+    def changeHistoryManager = ComponentAccessor.changeHistoryManager
+    def changeHistories = changeHistoryManager.getChangeHistories(issue) 
+  
+    if (changeHistories) {
+        def find = changeHistories.find{ it.getChangeItemBeans().find { it.getField() == fieldName } } 
+             
+        if (change) {
+            if (find) {
+                returnIssues << issue 
+            }
+        } else {
+            if (!find) {
+                returnIssues << issue 
+            }
+        }
+    } else if (!change) {
+        returnIssues << issue 
+    }
+}
+ 
+returnIssues
