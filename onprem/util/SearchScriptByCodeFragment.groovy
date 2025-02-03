@@ -1,3 +1,5 @@
+//2020
+
 import com.atlassian.jira.component.ComponentAccessor;
 import groovy.json.internal.LazyMap;
 import groovy.json.JsonSlurper;
