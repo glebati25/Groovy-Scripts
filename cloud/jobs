@@ -1,0 +1,81 @@
+import groovy.transform.Field
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import com.fasterxml.jackson.databind.node.ObjectNode
+import groovy.json.JsonSlurper
+import java.util.Date
+import java.text.SimpleDateFormat
+import org.apache.log4j.Logger
+
+@Field def log = Logger.getLogger(this.class)
+
+@Field final String adminEmail = '' /* service admin user email for authorization */
+@Field final String adminToken = '' /* service admin token for authorization */
+@Field final String sandboxURL = ""  
+
+getAllProjects().each { projectKey -> 
+    try {
+        List lastUpdatedIssue = getLastUpdatedIssueByProjectName(projectKey)
+        if (issueNotUpdatedLastThreeMonth(lastUpdatedIssue.last())) {
+            createArchivingRequest(projectKey)
+            log.warn("The project " + projectKey + " should be archived")
+        } 
+    } catch (Exception e) {
+        log.error("Project ${projectKey} haven't got any issues or admin user don't have permissions to project!" + e)
+    }
+}
+
+def createArchivingRequest(String projectKey) {
+    final String SERVICE_PROJECT_KEY = 'SERV'
+    def projectId = get("/rest/api/2/project/${SERVICE_PROJECT_KEY}").asObject(Map).body.id
+    def serviceRequest = get("/rest/api/2/issuetype/project?projectId=${projectId}").asObject(List).body.find { it['name'] == '[System] Service request' }['id']
+    
+    post('/rest/api/2/issue')
+        .header('Content-Type', 'application/json')
+        .body(
+            [
+                fields: [
+                    summary: "Project ${projectKey} needs to be archived",
+                    description: "Issues in the project ${projectKey} haven’t been updated in the last 3 months. Please verify with the relevant stakeholders that the project can be archived and also ask for decision regarding the project archiving procedure (Standard or Sensitive).",
+                    project: [
+                        key: ""
+                    ],
+                    issuetype: [
+                        id: serviceRequest
+                    ]
+                ]
+            ]).asString().body   
+}
+
+
+boolean issueNotUpdatedLastThreeMonth(String date) {
+    Date currentDate = new Date()
+    Date updatedDate = parseUpdatedDate(date)
+    Integer triggerMonth = 3
+    updatedDate.setMonth(updatedDate.month + triggerMonth)
+    updatedDate <= currentDate ? true : false
+}
+
+Date parseUpdatedDate(String date) {
+    final String pattern = "yyyy-MM-dd"
+    Date updatedDate = new SimpleDateFormat(pattern).parse(date)
+    return updatedDate
+}
+
+def getLastUpdatedIssueByProjectName(String projectKey) {
+
+    def lastUpdatedIssue = get("""/rest/api/3/search""")
+    .basicAuth(adminEmail, adminToken)
+    .queryString("jql", """project="${projectKey}" ORDER BY updated DESC""")
+    .queryString("maxResults", "50")
+    .asObject(Map).body.issues
+        
+    return lastUpdatedIssue.findResults {
+        [it.key, it.fields.updated]
+    }.first()
+}
+
+List getAllProjects() {
+    get("${sandboxURL}/rest/api/2/project")
+        .basicAuth(adminEmail, adminToken)
+        .asObject(List).body.findResults {it.key} as List
+}
