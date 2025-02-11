@@ -1,0 +1,33 @@
+/**
+ Purpose: Utils class with convenience methods for Service Desk approvals
+ Usage: import class into your code and use public static methods
+ Preconditions: none
+ Environment: JIRA Software 8.5.4, JSD 4.5.4, ScriptRunner v. 5.9.1
+ Script type: Filesystem
+ */
+
+package utils.sd
+
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.issue.Issue
+import com.atlassian.jira.issue.fields.CustomField
+import com.atlassian.jira.user.ApplicationUser
+import com.atlassian.servicedesk.api.approval.Approval
+import com.atlassian.servicedesk.api.approval.ApprovalService
+import com.atlassian.servicedesk.api.approval.Approver
+import utils.jira.cf.CustomFields
+
+class ApprovalUtil {
+    static final ApprovalService approvalService = ComponentAccessor.getOSGiComponentInstanceOfType(ApprovalService)
+
+    static Approval getLatestApproval(Issue issue) {
+        CustomField approvalsCF = ComponentAccessor.customFieldManager.getCustomFieldObject(CustomFields.APPROVAL)
+        List<Approval> approvals = issue.getCustomFieldValue(approvalsCF).approvals as List<Approval>
+        approvals.isEmpty() ? null : approvals.first()
+    }
+
+    static List<ApplicationUser> getUnansweredApprovers(ApplicationUser actor, Approval approval) {
+        List<Approver> approvers = approvalService.getApprovers(actor, approval)
+        approvers.findResults { it.approverDecision.isPresent() ? null : it.approverUser }
+    }
+}
